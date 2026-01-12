@@ -7,6 +7,8 @@ use App\Models\User;
 use Illuminate\Foundation\Auth\RegistersUsers;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Auth\Events\Registered;
+use Illuminate\Http\Request;
 
 class RegisterController extends Controller
 {
@@ -40,6 +42,24 @@ class RegisterController extends Controller
         $this->middleware('guest');
     }
 
+     /**
+     * Handle a registration request for the application.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
+    public function register(Request $request)
+    {
+        // Validate the registration data
+        $this->validator($request->all())->validate();
+        
+        // Create the user but don't log them in
+        event(new Registered($user = $this->create($request->all())));
+        
+        // Redirect with a message
+        return redirect('/')->with('status', 'Your account has been registered but needs to be activated by an admin before you can log in.');
+    }
+
     /**
      * Get a validator for an incoming registration request.
      *
@@ -52,6 +72,8 @@ class RegisterController extends Controller
             'first_name' => ['required', 'string', 'max:255'],
             'middle_name' => ['nullable', 'string', 'max:255'],
             'last_name' => ['required', 'string', 'max:255'],
+            'role' => ['required', 'integer'],
+            'birthdate' => ['nullable', 'date'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
         ]);
